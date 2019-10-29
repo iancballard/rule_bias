@@ -70,9 +70,6 @@ def experiment_module(p, win):
     
     #colors
     p.dot_colors = p.lch_to_rgb(p)
-    
-    #dotstims init
-    dotstims, cue = init_stims(p, win)
 
     #get fixation cross and feedback info
     fixation, feedback_text = get_basic_objects(win, p)
@@ -139,6 +136,9 @@ def experiment_module(p, win):
         ###dot stim/choice period###
         ############################
 
+        #initialize dots    
+        dotstims, cue = init_stims(p, win)
+        
         #set up response key and rt recording
         rt_clock = clock.getTime()
         p.choice_times.append(rt_clock)
