@@ -97,7 +97,8 @@ def experiment_module(p, win):
     p.correct_resp = []
     p.active_rule = []
     p.miniblock = []
-    p.coherences = {}
+    p.coherences = dict(color = [], motion = [], shape = [])
+    
     for block_num, block in enumerate(p.miniblocks):
         
         #create list of 'active' rules according to each miniblock
@@ -113,13 +114,12 @@ def experiment_module(p, win):
         for dimension in ['color','motion','shape']:
         
             coherence = np.linspace(p.coherence_floor[dimension],
-                                    p.coherence_floor[dimension] + .1,
+                                    p.coherence_floor[dimension] + p.coherence_range[dimension],
                                     num=int(p.ntrials_per_miniblock/2))
             coherence = list(coherence)*2 #2 repeats
-            np.shuffle(coherence)
-            p.coherences[dimension] = coherence
+            np.random.shuffle(coherence)
+            p.coherences[dimension].extend(list(coherence))
         
-            
         #get correct responses
         for n,rule in enumerate(block_rules):
             trial_idx = block_num*p.ntrials_per_miniblock + n
@@ -169,7 +169,14 @@ def experiment_module(p, win):
         ############################
         ###dot stim/choice period###
         ############################
-
+        
+        #set up color coherences (before initializing dots)
+        for rule in ['color','shape','motion']:
+            p.coherence[rule] = p.coherences[rule][n]
+        
+        #initialize dots    
+        dotstims, cue = init_stims(p, win)
+        
         #set up response key and rt recording
         rt_clock = clock.getTime()
         p.choice_times.append(rt_clock)
@@ -181,6 +188,8 @@ def experiment_module(p, win):
         shape = p.dimension_val['shape'][n]
         rule = p.active_rule[n]
         print(color, motion, shape, rule)
+        
+
 
         keys = present_dots_record_keypress(p,
                                             win,
