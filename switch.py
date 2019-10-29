@@ -22,7 +22,18 @@ def draw_stim(win, stim, nframes):
         stim.draw()
         win.flip()
         check_abort(event.getKeys())
-          
+        
+#annoying function because setting opacity for textstim doesn't work    
+def draw_error(win, nframes, fixation_color):
+    for frameN in range(int(nframes)):    
+        error = visual.TextStim(win,
+                color = fixation_color,
+                text='+',
+                opacity = float((frameN % 8) >= 4))
+        error.draw()
+        win.flip()
+        check_abort(event.getKeys())
+                  
 def experiment_module(p, win):
 
     ########################
@@ -158,6 +169,7 @@ def experiment_module(p, win):
     p.rt = []
     p.choice_times = []
     p.feedback_times = []
+    p.correct = []
     p.incorrect = [] #only for switch
     p.bank = 0
     win.recordFrameIntervals = True
@@ -223,14 +235,13 @@ def experiment_module(p, win):
                 nframes)
             
         elif str(resp) != str(p.correct_resp[n]):
-            correct = False
-            draw_stim(win,
-                feedback_text['incorrect'],
-                nframes)
+            correct = False            
+            draw_error(win, nframes, p.fixation_color)
         
         if not correct:
             num_errors +=1   
-
+        p.correct.append(correct)
+        
         ################
         ###iti period###
         ################
