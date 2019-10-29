@@ -76,6 +76,20 @@ def experiment_module(p, win):
     #### Set up Trial Order ####
     ############################
     
+    #Pseudorandomize miniblock structure
+    p.miniblocks = []
+    for i in range(p.num_block_reps):
+        mini = list(p.miniblock_ids) #deepcopy
+        np.random.shuffle(mini)
+        
+        #make sure no repititions
+        if len(p.miniblocks) > 0:
+            while mini[0] == p.miniblocks[-1]:
+                np.random.shuffle(mini)
+        p.miniblocks.extend(mini)
+    print(p.miniblocks)
+    
+    
     p.ntrials = p.ntrials_per_miniblock * len(p.miniblocks)
     
     #create random color, shape, motion patterns for all trials
@@ -98,12 +112,7 @@ def experiment_module(p, win):
         
         p.dimension_val[dimension], p.dimension_correct_resp[dimension] = zip(*resp)
      
-    #set up miniblocks
-    np.random.shuffle(p.miniblocks)
-    ########################
-    #### TODO Pseudorandomize miniblock structure ####
-    ########################
-    
+
     #create vector of correct response that implictly define "correct" rule
     p.correct_resp = []
     p.active_rule = []
