@@ -15,6 +15,7 @@ import pandas as pd
 import seaborn as sns
 from textwrap import dedent
 from trial_functions import check_abort, init_stims, present_dots_record_keypress, get_basic_objects, update_rule_names
+from psychopy import data
       
 
 def draw_stim(win, stim, nframes):    
@@ -38,7 +39,7 @@ def experiment_module(p, win):
 
     ########################
     #### Instructions ####
-    #######################
+    ########################
     update_rule_names(p)
     if p.step_num == 0:
         for txt in p.instruct_text['intro']:
@@ -55,11 +56,11 @@ def experiment_module(p, win):
             txt = txt.replace('TOTAL',str(p.num_blocks))
             
             message = visual.TextStim(win,
-                height = p.text_height,
                 text=dedent(txt))
             message.draw()
-            win.flip()
-            keys = event.waitKeys(keyList  = ['space'])           
+            win.flip()                
+            keys = event.waitKeys(keyList  = ['space'])
+            
     
 
     ########################
@@ -76,87 +77,25 @@ def experiment_module(p, win):
     fixation, feedback_text = get_basic_objects(win, p)
        
     ############################
-    #### Set up Trial Order ####
+    #### Set up Staircasing ####
     ############################
     
-    #Pseudorandomize miniblock structure
-    p.miniblocks = []
-    for i in range(p.num_block_reps):
-        mini = list(p.miniblock_ids) #deepcopy
-        np.random.shuffle(mini)
-        
-        #make sure no repititions
-        if len(p.miniblocks) > 0:
-            while mini[0] == p.miniblocks[-1]:
-                np.random.shuffle(mini)
-        p.miniblocks.extend(mini)
-    print(p.miniblocks)
-    
-    
-    p.ntrials = p.ntrials_per_miniblock * len(p.miniblocks)
-
-    #create random color, shape, motion patterns for all trials
-    p.dimension_val = {}
-    p.dimension_correct_resp = {}
-    for dimension in ['color','motion','shape']:
-        
-        if dimension == 'color':
-            direction = ['green','pink'] * int(p.ntrials/2)
-        elif dimension == 'shape':
-            direction = ['circle','cross'] * int(p.ntrials/2)
-        elif dimension == 'motion':
-            direction = ['up','down'] * int(p.ntrials/2)
-
-        correct_resp = ['1','2'] * int(p.ntrials/2)
-        
-        #shuffle
-        resp = list(zip(direction, correct_resp))
-        np.random.shuffle(resp)
-        
-        p.dimension_val[dimension], p.dimension_correct_resp[dimension] = zip(*resp)
-     
-
-    #create vector of correct response that implictly define "correct" rule
-    p.correct_resp = []
-    p.active_rule = []
-    p.miniblock = []
-    p.coherences = dict(color = [], motion = [], shape = [])
-    
-    for block_num, block in enumerate(p.miniblocks):
-        
-        #create list of 'active' rules according to each miniblock
-        block_rules = block.split('_') #2 active rules in a block
-        block_rules = block_rules * int(p.ntrials_per_miniblock/2)
-        np.random.shuffle(block_rules)
-        
-        ########################
-        #### TODO make coherences are balanced for 'active'rule ####
-        ########################
-        
-        #create coherences within miniblocks
-        for dimension in ['color','motion','shape']:
-        
-            coherence = np.linspace(p.coherence_floor[dimension],
-                                    p.coherence_floor[dimension] + p.coherence_range[dimension],
-                                    num=int(p.ntrials_per_miniblock/2))
-            coherence = list(coherence)*2 #2 repeats
-            np.random.shuffle(coherence)
-            p.coherences[dimension].extend(list(coherence))
-        
-        #get correct responses
-        for n,rule in enumerate(block_rules):
-            trial_idx = block_num*p.ntrials_per_miniblock + n
-            resp = p.dimension_correct_resp[rule][trial_idx]
-            
-            p.correct_resp.append(resp)
-            p.active_rule.append(rule)
-            p.miniblock.append(block)
-                
+    conditions=[
+        # {'label':'easy', 'startVal': 0.6, 'stepSizes' : .01, 'stepType': 'lin', 'minVal': .51, 'maxVal': 1, 'nUp': 1, 'nDown': 5, 'nReversals': 15},
+        {'label':'hard',
+        'startVal': p.coherence[p.rule],
+        'stepSizes' : .01,
+        'stepType': 'lin',
+        'minVal': p.min_value[p.rule],
+        'maxVal': 1,
+        'nUp': 1, 'nDown': 1,
+        'nReversals': p.n_reversals},
+        ]
+    stairs = data.MultiStairHandler(conditions=conditions, nTrials=10)
     
     ########################
     #### Run Experiment ####
     ########################
-    
 
     #start timer
     clock = core.Clock()   
@@ -176,15 +115,16 @@ def experiment_module(p, win):
     win.recordFrameIntervals = True
     num_correct= 0
     num_errors = 0
-    for n in range(p.ntrials):
+    
+    other_dimensions = [x for x in ['color','shape','motion'] if x != p.rule]
+    
+    for intensity, staircase in stairs:
         
         ############################
         ###dot stim/choice period###
         ############################
         
-        #set up color coherences (before initializing dots)
-        for rule in ['color','shape','motion']:
-            p.coherence[rule] = p.coherences[rule][n]
+        p.coherence[p.rule] = intensity
         
         #initialize dots    
         dotstims, cue = init_stims(p, win)
@@ -195,21 +135,24 @@ def experiment_module(p, win):
         correct = True
         
         #color, motion and shape for this trial
-        color = p.dimension_val['color'][n]
-        motion = p.dimension_val['motion'][n]
-        shape = p.dimension_val['shape'][n]
-        rule = p.active_rule[n]
-        print(color, motion, shape, rule)
+        trial_features = {}
+        for other_dim in other_dimensions:
+            trial_features[other_dim] = np.random.choice(p.rule_features[other_dim])
+
+        #get motion rule and correct response
+        act_resp = list(zip(p.rule_features[p.rule],
+                         ['1','2']))
+        np.random.shuffle(act_resp)
+        trial_features[p.rule], correct_resp = act_resp[0]
         
-
-
+        #present trial
         keys = present_dots_record_keypress(p,
                                             win,
                                             dotstims,
                                             cue,
                                             clock,
-                                            color, shape, motion,
-                                            rule)
+                                            trial_features['color'], trial_features['shape'], trial_features['motion'],
+                                            p.rule)
         
         #record keypress
         if not keys:
@@ -231,16 +174,23 @@ def experiment_module(p, win):
         if np.isnan(p.rt[-1]): 
             correct = False
             draw_error(win, nframes, p.too_slow_color)
-
             
-        elif str(resp) != str(p.correct_resp[n]):
+        elif str(resp) != str(correct_resp):
             correct = False            
             draw_error(win, nframes, p.fixation_color)
         
         if not correct:
             num_errors +=1   
+        
         p.correct.append(correct)
         
+        ##update staircase handler
+        stairs.addResponse(int(correct))
+        stairs.addOtherData('rt', p.rt[-1])
+        stairs.addOtherData('color', trial_features['color'])
+        stairs.addOtherData('shape', trial_features['shape'])
+        stairs.addOtherData('motion', trial_features['motion'])
+                
         ################
         ###iti period###
         ################
@@ -249,18 +199,26 @@ def experiment_module(p, win):
                     fixation,
                     p.iti * win.framerate)
     
-
-    print('errors',num_errors, num_errors/p.ntrials)
+    
+    print_reversal = min(p.n_reversals,6)
+    
+    print('mean reversal',p.rule, np.mean(stairs.staircases[0].reversalIntensities[-print_reversal:]))
+    print('std reversal',p.rule, np.std(stairs.staircases[0].reversalIntensities[-print_reversal:]))
     print('mean_rt',np.nanmean(p.rt))
     print('\nOverall, %i frames were dropped.\n' % win.nDroppedFrames)
 
     #save data
-    out_f = op.join(p.outdir,p.sub + '_switch_' + str(p.step_num) + '.pkl')
+    out_f = op.join(p.outdir,p.sub + '_psychophys_run' + str(p.run) + '_' + p.rule + '.pkl')
     while op.exists(out_f):
         out_f = out_f[:-4] + '+' + '.pkl'
 
     with open(out_f, 'wb') as output:
         pickle.dump(p, output, pickle.HIGHEST_PROTOCOL)
+    
+    # save data as multiple formats
+    filename = op.join(p.outdir,p.sub + '_run' + str(p.run) + '_staircase_' + p.rule)
+    stairs.saveAsExcel(filename)  # easy to browse
+    stairs.saveAsPickle(filename)
         
                               
 def main(arglist):
@@ -274,11 +232,7 @@ def main(arglist):
     p = datastruct.Params(mode)
     p.set_by_cmdline(arglist)
     p.randomize_shape_assignments()
-    p.randomize_test_blocks()
     
-    if p.mode != 'switch_train': #high coherence for train
-        p.set_subject_specific_params()
-    print(p.coherence_floor)
     ##################################
     #### Window Initialization ####
     ##################################
@@ -294,8 +248,10 @@ def main(arglist):
     #### Task Blocks ####
     ########################
 
-    for n in range(p.num_blocks):
+    p.num_blocks = len(p.psychophys_blocks)
+    for n, rule in enumerate(p.psychophys_blocks):
         p.step_num = n
+        p.rule = rule
         c = experiment_module(p, win)
         
     core.quit()

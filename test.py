@@ -38,7 +38,7 @@ def experiment_module(p, win):
 
     ########################
     #### Instructions ####
-    #######################
+    ########################
     update_rule_names(p)
     if p.step_num == 0:
         for txt in p.instruct_text['intro']:
@@ -78,85 +78,122 @@ def experiment_module(p, win):
     ############################
     #### Set up Trial Order ####
     ############################
-    
-    #Pseudorandomize miniblock structure
-    p.miniblocks = []
-    for i in range(p.num_block_reps):
-        mini = list(p.miniblock_ids) #deepcopy
-        np.random.shuffle(mini)
-        
-        #make sure no repititions
-        if len(p.miniblocks) > 0:
-            while mini[0] == p.miniblocks[-1]:
-                np.random.shuffle(mini)
-        p.miniblocks.extend(mini)
-    print(p.miniblocks)
-    
-    
-    p.ntrials = p.ntrials_per_miniblock * len(p.miniblocks)
-
-    #create random color, shape, motion patterns for all trials
-    p.dimension_val = {}
-    p.dimension_correct_resp = {}
-    for dimension in ['color','motion','shape']:
-        
-        if dimension == 'color':
-            direction = ['green','pink'] * int(p.ntrials/2)
-        elif dimension == 'shape':
-            direction = ['circle','cross'] * int(p.ntrials/2)
-        elif dimension == 'motion':
-            direction = ['up','down'] * int(p.ntrials/2)
-
-        correct_resp = ['1','2'] * int(p.ntrials/2)
-        
-        #shuffle
-        resp = list(zip(direction, correct_resp))
-        np.random.shuffle(resp)
-        
-        p.dimension_val[dimension], p.dimension_correct_resp[dimension] = zip(*resp)
-     
-
-    #create vector of correct response that implictly define "correct" rule
     p.correct_resp = []
     p.active_rule = []
     p.miniblock = []
     p.coherences = dict(color = [], motion = [], shape = [])
+    if p.block_id == 'test':
+        
+        #Pseudorandomize miniblock structure
+        p.miniblocks = []
+        for i in range(p.num_block_reps):
+            mini = list(p.miniblock_ids) #deepcopy
+            np.random.shuffle(mini)
+        
+            #make sure no repititions
+            if len(p.miniblocks) > 0:
+                while mini[0] == p.miniblocks[-1]:
+                    np.random.shuffle(mini)
+            p.miniblocks.extend(mini)
+        print(p.miniblocks)
     
-    for block_num, block in enumerate(p.miniblocks):
-        
-        #create list of 'active' rules according to each miniblock
-        block_rules = block.split('_') #2 active rules in a block
-        block_rules = block_rules * int(p.ntrials_per_miniblock/2)
-        np.random.shuffle(block_rules)
-        
-        ########################
-        #### TODO make coherences are balanced for 'active'rule ####
-        ########################
-        
-        #create coherences within miniblocks
+    
+        p.ntrials = p.ntrials_per_miniblock * len(p.miniblocks)
+
+        #create random color, shape, motion patterns for all trials
+        p.dimension_val = {}
+        p.dimension_correct_resp = {}
         for dimension in ['color','motion','shape']:
         
-            coherence = np.linspace(p.coherence_floor[dimension],
-                                    p.coherence_floor[dimension] + p.coherence_range[dimension],
-                                    num=int(p.ntrials_per_miniblock/2))
-            coherence = list(coherence)*2 #2 repeats
-            np.random.shuffle(coherence)
-            p.coherences[dimension].extend(list(coherence))
+            if dimension == 'color':
+                direction = ['green','pink'] * int(p.ntrials/2)
+            elif dimension == 'shape':
+                direction = ['circle','cross'] * int(p.ntrials/2)
+            elif dimension == 'motion':
+                direction = ['up','down'] * int(p.ntrials/2)
+
+            correct_resp = ['1','2'] * int(p.ntrials/2)
         
-        #get correct responses
-        for n,rule in enumerate(block_rules):
-            trial_idx = block_num*p.ntrials_per_miniblock + n
-            resp = p.dimension_correct_resp[rule][trial_idx]
+            #shuffle
+            resp = list(zip(direction, correct_resp))
+            np.random.shuffle(resp)
+        
+            p.dimension_val[dimension], p.dimension_correct_resp[dimension] = zip(*resp)
+     
+
+        #create vector of correct response that implictly define "correct" rule
+        for block_num, block in enumerate(p.miniblocks):
+        
+            #create list of 'active' rules according to each miniblock
+            block_rules = block.split('_') #2 active rules in a block
+            block_rules = block_rules * int(p.ntrials_per_miniblock/2)
+            np.random.shuffle(block_rules)
+        
+            ########################
+            #### TODO make coherences are balanced for 'active'rule ####
+            ########################
+        
+            #create coherences within miniblocks
+            for dimension in ['color','motion','shape']:
+        
+                coherence = np.linspace(p.coherence_floor[dimension],
+                                        p.coherence_floor[dimension] + p.coherence_range[dimension],
+                                        num=int(p.ntrials_per_miniblock/2))
+                coherence = list(coherence)*2 #2 repeats
+                np.random.shuffle(coherence)
+                p.coherences[dimension].extend(list(coherence))
+        
+            #get correct responses
+            for n,rule in enumerate(block_rules):
+                trial_idx = block_num*p.ntrials_per_miniblock + n
+                resp = p.dimension_correct_resp[rule][trial_idx]
             
-            p.correct_resp.append(resp)
-            p.active_rule.append(rule)
-            p.miniblock.append(block)
-                
+                p.correct_resp.append(resp)
+                p.active_rule.append(rule)
+                p.miniblock.append(block)
+    
+    else:
+        
+        p.active_rule = [p.block_id] * p.n_train_trials
+        p.ntrials = p.n_train_trials
+    
+        #create coherences
+        num_coherences_per_training = int(p.n_train_trials / (p.ntrials_per_miniblock/2)) + 1 
+        for i in range(num_coherences_per_training):
+            for dimension in ['color','motion','shape']:
+
+                coherence = np.linspace(p.coherence_floor[dimension],
+                                        p.coherence_floor[dimension] + p.coherence_range[dimension],
+                                        num=int(p.ntrials_per_miniblock/2))
+                                    
+                np.random.shuffle(coherence)
+                p.coherences[dimension].extend(list(coherence))
+        
+        #create random color, shape, motion patterns for all trials
+        p.dimension_val = {}
+        p.dimension_correct_resp = {}
+        for dimension in ['color','motion','shape']:
+        
+            if dimension == 'color':
+                direction = ['green','pink'] * int(p.ntrials/2)
+            elif dimension == 'shape':
+                direction = ['circle','cross'] * int(p.ntrials/2)
+            elif dimension == 'motion':
+                direction = ['up','down'] * int(p.ntrials/2)
+
+            correct_resp = ['1','2'] * int(p.ntrials/2)
+        
+            #shuffle
+            resp = list(zip(direction, correct_resp))
+            np.random.shuffle(resp)
+        
+            p.dimension_val[dimension], p.dimension_correct_resp[dimension] = zip(*resp)
+            
+        p.correct_resp = p.dimension_correct_resp[p.block_id]
     
     ########################
     #### Run Experiment ####
     ########################
-    
 
     #start timer
     clock = core.Clock()   
@@ -182,7 +219,7 @@ def experiment_module(p, win):
         ###dot stim/choice period###
         ############################
         
-        #set up color coherences (before initializing dots)
+        #set up coherences (before initializing dots)
         for rule in ['color','shape','motion']:
             p.coherence[rule] = p.coherences[rule][n]
         
@@ -255,7 +292,7 @@ def experiment_module(p, win):
     print('\nOverall, %i frames were dropped.\n' % win.nDroppedFrames)
 
     #save data
-    out_f = op.join(p.outdir,p.sub + '_switch_' + str(p.step_num) + '.pkl')
+    out_f = op.join(p.outdir,p.sub + '_test_' + p.block_id + '_' + str(p.step_num) + '.pkl')
     while op.exists(out_f):
         out_f = out_f[:-4] + '+' + '.pkl'
 
@@ -274,11 +311,8 @@ def main(arglist):
     p = datastruct.Params(mode)
     p.set_by_cmdline(arglist)
     p.randomize_shape_assignments()
-    p.randomize_test_blocks()
+    p.set_subject_specific_params()
     
-    if p.mode != 'switch_train': #high coherence for train
-        p.set_subject_specific_params()
-    print(p.coherence_floor)
     ##################################
     #### Window Initialization ####
     ##################################
@@ -293,9 +327,12 @@ def main(arglist):
     ########################
     #### Task Blocks ####
     ########################
-
-    for n in range(p.num_blocks):
+    p.randomize_test_blocks()
+    p.blocks = np.repeat(p.blocks, p.num_test_within_blocks)
+    p.num_blocks = len(p.blocks)
+    for n,block in enumerate(p.blocks):
         p.step_num = n
+        p.block_id = block
         c = experiment_module(p, win)
         
     core.quit()

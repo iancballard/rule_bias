@@ -14,7 +14,7 @@ import datastruct
 import pandas as pd
 import seaborn as sns
 from textwrap import dedent
-from trial_functions import check_abort, init_stims, present_dots_record_keypress, get_basic_objects
+from trial_functions import check_abort, init_stims, present_dots_record_keypress, get_basic_objects, update_rule_names
       
 
 def draw_stim(win, stim, nframes):    
@@ -42,6 +42,7 @@ def experiment_module(p, win):
     if p.step_num == 0:
         for txt in p.instruct_text['intro']:
             message = visual.TextStim(win,
+                height = p.text_height,
                 text=dedent(txt))
             message.draw()
             win.flip()
@@ -50,6 +51,7 @@ def experiment_module(p, win):
     if p.step_num < 3: #run through instructions for each feature the first time
         for txt in p.instruct_text[p.training_step]:
             message = visual.TextStim(win,
+                height = p.text_height,
                 text=dedent(txt))
             message.draw()
             win.flip()
@@ -61,6 +63,7 @@ def experiment_module(p, win):
             txt = txt.replace('FEATURE',p.training_step)
             
             message = visual.TextStim(win,
+                height = p.text_height,
                 text=dedent(txt))
             message.draw()
             win.flip()                
@@ -116,6 +119,7 @@ def experiment_module(p, win):
     # notify participant
     if p.step_num < 2: #after 2nd intro, "space to continue" is in instructions
         message = visual.TextStim(win,
+            height = p.text_height,
             text='Press space to begin')
         message.draw()
         win.flip()
@@ -146,6 +150,7 @@ def experiment_module(p, win):
         ############################
         ###dot stim/choice period###
         ############################
+        print(p.coherence[p.training_step])
 
         #initialize dots    
         dotstims, cue = init_stims(p, win)
@@ -188,9 +193,7 @@ def experiment_module(p, win):
             
         if np.isnan(p.rt[-1]): 
             correct = False
-            draw_stim(win,
-                feedback_text['missed'],
-                nframes)
+            draw_error(win, nframes, p.too_slow_color)
             
         elif str(resp) != str(p.correct_resp[n]):
             correct = False            
@@ -201,11 +204,11 @@ def experiment_module(p, win):
  
         ######################
         ###update coherence###
-        ######################   
-        
+        ######################
+        print('step_size',p.num_correct_down[p.step_num])
         if correct:
             num_correct += 1
-            if num_correct == 1:
+            if num_correct == p.num_correct_down[p.step_num]:
                 p.coherence[p.training_step] = p.coherence[p.training_step] - p.coherence_update[p.training_step]
                 
                 #don't let it get too low
@@ -218,7 +221,6 @@ def experiment_module(p, win):
             num_correct = 0
                 
         p.coherence_record[p.training_step].append(p.coherence[p.training_step])
-        print(p.coherence[p.training_step])
         
         ################
         ###iti period###
@@ -235,7 +237,10 @@ def experiment_module(p, win):
     print('\nOverall, %i frames were dropped.\n' % win.nDroppedFrames)
 
     #save data
-    out_f = op.join(p.outdir,p.sub + '_training_' + p.training_step + str(p.step_num) + '.pkl')
+    out_f = op.join(p.outdir,p.sub + '_training_' + p.training_step + '_' + str(p.step_num) + '.pkl')
+    while op.exists(out_f):
+        out_f = out_f[:-4] + '+' + '.pkl'        
+
     with open(out_f, 'wb') as output:
         pickle.dump(p, output, pickle.HIGHEST_PROTOCOL)
         
@@ -251,6 +256,7 @@ def main(arglist):
     mode = arglist.pop(0)
     p = datastruct.Params(mode)
     p.set_by_cmdline(arglist)
+    p.randomize_shape_assignments()
     
     ##################################
     #### Window Initialization ####
@@ -263,31 +269,28 @@ def main(arglist):
     
     #hide mouse
     event.Mouse(visible = False)
-                  
-    
+                      
     ########################
     #### Task Blocks ####
     ########################
     p.coherence_record = {}
     
     #loop through training steps
-    color = []
-    motion = []
+    summary = {'color':[],'motion':[], 'shape':[]}
     p.total_trials = len(p.training_blocks)
     for n,training_step in enumerate(p.training_blocks):
         p.training_step = training_step
         p.step_num = n
-        c = experiment_module(p, win)
-        # if training_step == 'color':
-        #     color.append(c)
-        # else:
-        #     motion.append(m)
+        mean_coherence = experiment_module(p, win)
+        
+        summary[training_step].append(mean_coherence)
+
     
     # #output summary of performance
-    # print('color_summary',color, 'motion_summary', motion)
-    # for n in range(1,int(len(p.training_blocks)/2 + 1)):
-    #     print('color mean last ' + str(n) + ' trials', np.mean(color[-n:]))
-    #     print('motion mean last ' + str(n) + ' trials', np.mean(motion[-n:]))
+    for n in range(1,int(len(p.training_blocks)/2 + 1)):
+        print('color mean last ' + str(n) + ' blocks', np.mean(summary['color'][-n:]))
+        print('motion mean last ' + str(n) + ' blocks', np.mean(summary['motion'][-n:]))
+        print('shape mean last ' + str(n) + ' blocks', np.mean(summary['shape'][-n:]))
         
     core.quit()
    

@@ -7,24 +7,25 @@ import numpy as np
 #base parameters for all runs
 base = dict(
     decision_dur = 2,
-    feedback_dur = 1,
+    feedback_dur = .5,
+    iti = 1,
     outdir = op.abspath('./data/'),
-    circle_radius = 100,
-    coherence = {'motion': .9,
-                'color':.9,
-                'shape':.9},             
     window_color = '#0a0a0a',#'#545454',
     full_screen = True,
     test_refresh = True,
+    coherence = dict(color = .8,
+                           motion = .8,
+                           shape = .8),
     update_coherence = False, #adjust coherences according to rts
     monitor_units = 'deg',
-    fixation_color = -.2
+    fixation_color = -.2,
+    text_height = .5,
 )
 
 #dot parameters
 base.update(
-    dot_size = .13, #degrees of visual angle
-    dot_aperture = 5, #degrees of visual angle
+    dot_size = .2,#.15, #degrees of visual angle
+    dot_aperture = 6, #degrees of visual angle
     dot_density = 24,
     motion_direction_map = {'up':270, 'down':90},
     chroma = 50,
@@ -37,9 +38,6 @@ base.update(
     poly_radius=.3,
     poly_linewidth=1,
     poly_color=-.2,
-    cues = dict(shape = 3,
-                      color = 4,
-                      motion = 5)
     )
 
 #feedback parameters
@@ -48,6 +46,7 @@ base.update(
     fb_text_size = .75,
     fb_left_loc = (-2.5,0),
     fb_right_loc = (2.5,0),
+    too_slow_color = '#992020',
     fb_pos_color = '#997020',#'#E2A429',
     fb_neg_color = '#992020',#'#AA0707',
     fb_text_color = '#999999'
@@ -59,13 +58,16 @@ train.update(
 
     run_type = 'train',
     monitor_name = 'mbpro',
-    ntrials = 5,#20,
-    iti = 1,
-    training_blocks = ['shape','motion','color']*5,#,'motion','color']*20,
+    ntrials = 40,
+    training_blocks = ['shape','motion','color']*7,
     coherence_update = {'motion': .02,
                 'color':.01,
                 'shape':.01},
+    coherence = {'motion': .6,
+                'color':.8,
+                'shape':.8},
     coherence_step = [0]*3,
+    num_correct_down = np.repeat([3,3,3,3,3,3,2],3), #how many correct in a row before it gets harder
     feedback_dur = .75,
     decision_dur = 2,
     instruct_text = {
@@ -78,13 +80,27 @@ train.update(
                     """,
                     """
                     In this part of the experiment, you will practice responding
-                    based on the color and the motion of the dots.
+                    based on the color, shape motion of the dots.
+                    """,
+                    """
                     You have 2 seconds to respond on each trial.
-                    Try to respond quickly, but without sacrificing accuracy. 
+                    Try to respond quickly, but without sacrificing accuracy.
+                    The central cross will flicker if you answer incorrectly.
+                    """,
+                    """
+                    Each rule is associated with a shape. Try to learn these 
+                    shapes because they will be important later on.
+                    """,
+                    """
+                    Keep your eyes focused on the central shape.
+                    Do not move your eyes around to look at the dots.
                     """],
     'break_txt':    ["""
                     You have completed COMPLETED out of TOTAL trials.
-                    Next you will respond based on FEATURE.
+                    Next you will respond based on
+                    
+                    FEATURE.
+                    
                     Take a short break if you'd like.
                     Press space to continue.
                     """],
@@ -108,27 +124,81 @@ train.update(
     instruct_color = '#7E2BE0'
 )
 
-switch = deepcopy(base)
+psychophys = deepcopy(base)
 
-switch.update(
+psychophys.update(
 
-    run_type = 'train',
+    run_type = 'psychopys',
     monitor_name = 'mbpro',
-    ntrials = 20,
-    iti = 1,
-    num_blocks = 10,
-    miniblocks = ['color_shape','shape_motion','motion_color']*2,
-    ntrials_per_miniblock = 10, #=60 trials per block
-    feedback_dur = .75,
-    decision_dur = 2,
+    n_reversals = 10,
+    min_value = {'motion': .01,
+                    'color': .5,
+                    'shape': .5},
+    psychophys_blocks = ['motion','shape','color'],
+    rule_features = {'motion': ['up','down'],
+                    'color': ['green','pink'],
+                    'shape': ['circle','cross']},
     instruct_text = {
     'intro':
                     [
                     """
                     In this part of the experiment, you will practice responding
-                    based on the color and the motion of the dots.
+                    based on the color, motion and direction of the dots.
+                    """
+                    """
+                    On each trial, a central shape will indicate how you should respond:
+                    """
+                    """                    
+                    Color: RULE1
+                    Motion: RULE2
+                    Shape: RULE3    
+                    """
+                    """                   
                     You have 2 seconds to respond on each trial.
-                    Try to respond quickly, but without sacrificing accuracy. 
+                    Try to respond quickly, but without sacrificing accuracy.
+                    Press space to begin.
+                    """],
+    'break_txt':    ["""
+                    You have completed COMPLETED out of TOTAL blocks.
+                    Take a short break if you'd like.
+                    Press space to continue.
+                    """]
+                },
+    )
+
+
+switch = deepcopy(base)
+
+switch.update(
+
+    run_type = 'switch',
+    monitor_name = 'mbpro',
+    num_blocks = 8,
+    miniblock_ids = ['color_shape','shape_motion','motion_color'],
+    num_block_reps = 2, #6 blocks total
+    ntrials_per_miniblock = 12, #=72 trials per block
+    coherence_range = dict(color = .1,
+                           motion = .1,
+                           shape = .1),
+    instruct_text = {
+    'intro':
+                    [
+                    """
+                    In this part of the experiment, you will practice responding
+                    based on the color, motion and direction of the dots.
+                    """
+                    """
+                    On each trial, a central shape will indicate how you should respond:
+                    """
+                    """                    
+                    Color: RULE1
+                    Motion: RULE2
+                    Shape: RULE3    
+                    """
+                    """                   
+                    You have 2 seconds to respond on each trial.
+                    Try to respond quickly, but without sacrificing accuracy.
+                    Press space to begin.
                     """],
     'break_txt':    ["""
                     You have completed COMPLETED out of TOTAL blocks.
@@ -139,3 +209,30 @@ switch.update(
     instruct_color = '#7E2BE0'
 )
 
+
+switch_train = deepcopy(switch)
+
+switch_train.update(
+    run_type = 'switch_train',
+    num_blocks = 2,
+    coherence_floor = dict(color = .8,
+                           motion = .8,
+                           shape = .8),
+    coherence_range = dict(color = .15,
+                           motion = .15,
+                           shape = .15),
+)
+
+test = deepcopy(switch)
+
+test.update(
+
+    miniblock_ids = ['color_shape','shape_motion','motion_color'],
+    num_block_reps = 2, #6 blocks total
+    ntrials_per_miniblock = 12, #=72 trials per block    
+    n_train_trials = 120, #per subblock
+    num_test_within_blocks = 2,
+    )
+    
+    
+    
