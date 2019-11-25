@@ -103,3 +103,10 @@ def get_basic_objects(win, p):
         text='Incorrect')
     
     return fixation, feedback_text
+
+def update_rule_names(p):
+
+    p.instruct_text['intro'] = [x.replace('RULE1',p.cue_map[p.cues['color']]) for x in p.instruct_text['intro']]
+    p.instruct_text['intro'] = [x.replace('RULE2',p.cue_map[p.cues['motion']]) for x in p.instruct_text['intro']]
+    p.instruct_text['intro'] = [x.replace('RULE3',p.cue_map[p.cues['shape']]) for x in p.instruct_text['intro']]
+
