@@ -90,19 +90,12 @@ def get_basic_objects(win, p):
     fixation = visual.TextStim(win,
         color = p.fixation_color,
         text='+')
-
-    #feedback text 
-    feedback_text = dict()
-                        
-    feedback_text['missed'] = visual.TextStim(win,
-        color = '#af392a',
-        text='Too slow')
         
-    feedback_text['incorrect'] = visual.TextStim(win,
-        color = '#af392a',
-        text='Incorrect')
+    reward = visual.TextStim(win,
+        color = p.rew_color,
+        text='+')
     
-    return fixation, feedback_text
+    return fixation, reward
 
 def update_rule_names(p):
 

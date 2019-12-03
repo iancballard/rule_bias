@@ -86,7 +86,7 @@ def experiment_module(p, win):
     p.dot_colors = p.lch_to_rgb(p)
 
     #get fixation cross and feedback info
-    fixation, feedback_text = get_basic_objects(win, p)
+    fixation, reward = get_basic_objects(win, p)
                                                   
     ############################
     #### Set up Trial Order ####

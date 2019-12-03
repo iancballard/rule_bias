@@ -230,16 +230,29 @@ switch_train.update(
                            shape = .8),
 )
 
-test = deepcopy(switch)
+reward = deepcopy(switch)
 
-test.update(
+reward.update(
+    run_type = 'reward',
+    num_rew_blocks = 10,
+    num_test_blocks = 2,
+    rew_color = '#997020',
+    fb_iti = .3,
+    fb_dur = .5,
+    p_rew = 1.0,
+    break_dur = 6, #6 minute break
+)
 
-    miniblock_ids = ['color_shape','shape_motion','motion_color'],
-    num_block_reps = 2, #6 blocks total
-    ntrials_per_miniblock = 12, #=72 trials per block
-    n_train_trials = 120, #per subblock
-    num_test_within_blocks = 2,
-    )
-    
-    
+# test = deepcopy(switch)
+#
+# test.update(
+#
+#     miniblock_ids = ['color_shape','shape_motion','motion_color'],
+#     num_block_reps = 2, #6 blocks total
+#     ntrials_per_miniblock = 12, #=72 trials per block
+#     n_train_trials = 120, #per subblock
+#     num_test_within_blocks = 2,
+#     )
+#
+#
     

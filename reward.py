@@ -73,7 +73,7 @@ def experiment_module(p, win):
     dotstims, cue = init_stims(p, win)
 
     #get fixation cross and feedback info
-    fixation, feedback_text = get_basic_objects(win, p)
+    fixation, reward = get_basic_objects(win, p)
        
     ############################
     #### Set up Trial Order ####
@@ -172,6 +172,7 @@ def experiment_module(p, win):
     p.feedback_times = []
     p.correct = []
     p.incorrect = [] #only for switch
+    p.rew = []
     p.bank = 0
     win.recordFrameIntervals = True
     num_correct= 0
@@ -230,7 +231,6 @@ def experiment_module(p, win):
         if np.isnan(p.rt[-1]): 
             correct = False
             draw_error(win, nframes, p.too_slow_color)
-
             
         elif str(resp) != str(p.correct_resp[n]):
             correct = False            
@@ -240,13 +240,34 @@ def experiment_module(p, win):
             num_errors +=1   
         p.correct.append(correct)
         
+        #give reward if active rule is rewarded
+        rew = False
+        if correct and rule == p.rewarded_rule:
+            if np.random.rand() <= p.p_rew: #coin flip
+                rew = True
+        p.rew.append(rew)
+                
+        
         ################
         ###iti period###
         ################
         
-        draw_stim(win,
-                    fixation,
-                    p.iti * win.framerate)
+        if rew: #change fixation cross color
+            draw_stim(win,
+                        fixation,
+                        p.fb_iti * win.framerate)
+            #draw reward cue
+            draw_stim(win,
+                        reward,
+                        p.fb_dur * win.framerate)
+            draw_stim(win,
+                        fixation,
+                        p.iti * win.framerate)
+        
+        else: #no reward
+            draw_stim(win,
+                        fixation,
+                        p.iti * win.framerate)
     
 
     print('errors',num_errors, num_errors/p.ntrials)
@@ -254,7 +275,7 @@ def experiment_module(p, win):
     print('\nOverall, %i frames were dropped.\n' % win.nDroppedFrames)
 
     #save data
-    out_f = op.join(p.outdir,p.sub + '_switch_' + str(p.step_num) + '.pkl')
+    out_f = op.join(p.outdir,p.sub + '_reward_' + p.block_kind + '_' + str(p.step_num) + '.pkl')
     while op.exists(out_f):
         out_f = out_f[:-4] + '+' + '.pkl'
 
@@ -273,11 +294,10 @@ def main(arglist):
     p = datastruct.Params(mode)
     p.set_by_cmdline(arglist)
     p.randomize_shape_assignments()
-    p.randomize_test_blocks()
+    p.randomize_rewarded_rule()
+    p.set_subject_specific_params()
+    print(p.rewarded_rule)
     
-    if p.mode != 'switch_train': #high coherence for train
-        p.set_subject_specific_params()
-    print(p.coherence_floor)
     ##################################
     #### Window Initialization ####
     ##################################
@@ -293,7 +313,30 @@ def main(arglist):
     #### Task Blocks ####
     ########################
 
-    for n in range(p.num_blocks):
+    #reward blocks
+    for n in range(p.num_rew_blocks):
+        p.num_blocks = p.num_test_blocks
+        p.block_kind = 'reward'
+        p.step_num = n
+        c = experiment_module(p, win)
+        
+    #break period
+    txt = 'Great job. You will now take a break. Please relax for the next NUM minutes. After, you will have two more blocks. These blocks will not have rewards, but please try your hardest.'
+    for break_min in range(p.break_dur):
+        time_left = p.break_dur - break_min
+        break_txt = txt.replace('NUM', str(time_left))
+        message = visual.TextStim(win,
+            height = p.text_height,
+            text=break_txt)
+        message.draw()
+        win.flip()
+        core.wait(60)
+    
+    #test blocks
+    for n in range(p.num_test_blocks):
+        p.p_rew = 0
+        p.block_kind = 'test'
+        p.num_blocks = p.num_test_blocks
         p.step_num = n
         c = experiment_module(p, win)
         

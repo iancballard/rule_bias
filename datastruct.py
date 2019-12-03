@@ -83,14 +83,19 @@ class Params(object):
                           motion = cue_shapes[2])
         self.cue_map = {3:'Triangle', 4:'Diamond', 5: 'Pentagon'}
     
-    def randomize_test_blocks(self):
+    # def randomize_test_blocks(self):
+    #     rs = RandomState(self.hash_sub_id) #set random state
+    #     test_type = ['motion','color','shape']
+    #     rs.shuffle(test_type)
+    #     self.blocks = ['test']
+    #     for tt in test_type:
+    #         self.blocks.append(tt)
+    #         self.blocks.append('test')       
+    
+    def randomize_rewarded_rule(self):
         rs = RandomState(self.hash_sub_id) #set random state
-        test_type = ['motion','color','shape']
-        rs.shuffle(test_type)
-        self.blocks = ['test']
-        for tt in test_type:
-            self.blocks.append(tt)
-            self.blocks.append('test')        
+        rules = ['motion','color','shape']
+        self.rewarded_rule = rs.choice(rules)
     
     def lch_to_rgb(self, p):
         """Convert the color values from Lch to RGB."""

@@ -73,7 +73,7 @@ def experiment_module(p, win):
     dotstims, cue = init_stims(p, win)
 
     #get fixation cross and feedback info
-    fixation, feedback_text = get_basic_objects(win, p)
+    fixation, reward = get_basic_objects(win, p)
        
     ############################
     #### Set up Trial Order ####
