@@ -211,6 +211,7 @@ def experiment_module(p, win):
             if num_correct == p.num_correct_down[p.step_num]:
                 p.coherence[p.training_step] = p.coherence[p.training_step] - p.coherence_update[p.training_step]
                 
+                p.coherence[p.training_step] = min(p.coherence[p.training_step], .99) #don't let it go over 1
                 #don't let it get too low
                 if p.training_step in ['color','shape']:
                     p.coherence[p.training_step] = max(p.coherence[p.training_step], .51) 
@@ -237,7 +238,7 @@ def experiment_module(p, win):
     print('\nOverall, %i frames were dropped.\n' % win.nDroppedFrames)
 
     #save data
-    out_f = op.join(p.outdir,p.sub + '_training_' + p.training_step + '_' + str(p.step_num) + '.pkl')
+    out_f = op.join(p.outdir,p.sub + '_training_' + p.training_step + '_' + str(p.step_num) + '_' + p.mode + '.pkl')
     while op.exists(out_f):
         out_f = out_f[:-4] + '+' + '.pkl'        
 
@@ -258,6 +259,9 @@ def main(arglist):
     p.set_by_cmdline(arglist)
     p.randomize_shape_assignments()
     
+    if p.mode == 'retrain':
+        p.set_subject_specific_params()
+        p.coherence = p.coherence_floor
     ##################################
     #### Window Initialization ####
     ##################################

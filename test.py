@@ -138,8 +138,8 @@ def experiment_module(p, win):
         
                 coherence = np.linspace(p.coherence_floor[dimension],
                                         p.coherence_floor[dimension] + p.coherence_range[dimension],
-                                        num=int(p.ntrials_per_miniblock/2))
-                coherence = list(coherence)*2 #2 repeats
+                                        num=int(p.ntrials_per_miniblock/3))
+                coherence = list(coherence)*3 #2 repeats
                 np.random.shuffle(coherence)
                 p.coherences[dimension].extend(list(coherence))
         
@@ -158,13 +158,13 @@ def experiment_module(p, win):
         p.ntrials = p.n_train_trials
     
         #create coherences
-        num_coherences_per_training = int(p.n_train_trials / (p.ntrials_per_miniblock/2)) + 1 
+        num_coherences_per_training = int(p.n_train_trials / (p.ntrials_per_miniblock/3)) + 1 
         for i in range(num_coherences_per_training):
             for dimension in ['color','motion','shape']:
 
                 coherence = np.linspace(p.coherence_floor[dimension],
                                         p.coherence_floor[dimension] + p.coherence_range[dimension],
-                                        num=int(p.ntrials_per_miniblock/2))
+                                        num=int(p.ntrials_per_miniblock/3))
                                     
                 np.random.shuffle(coherence)
                 p.coherences[dimension].extend(list(coherence))
@@ -194,7 +194,7 @@ def experiment_module(p, win):
     ########################
     #### Run Experiment ####
     ########################
-
+    print(p.coherences)
     #start timer
     clock = core.Clock()   
     
@@ -330,6 +330,7 @@ def main(arglist):
     p.randomize_test_blocks()
     p.blocks = np.repeat(p.blocks, p.num_test_within_blocks)
     p.num_blocks = len(p.blocks)
+    print(p.blocks)
     for n,block in enumerate(p.blocks):
         p.step_num = n
         p.block_id = block

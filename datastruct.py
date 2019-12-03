@@ -11,6 +11,7 @@ import warnings
 from colormath.color_objects import LCHabColor, sRGBColor
 from colormath.color_conversions import convert_color
 from psychopy import core, visual, event, logging
+from numpy.random import RandomState
 pd.options.mode.chained_assignment = None  # suppress chained assignment warning
 
 class Params(object):
@@ -71,6 +72,26 @@ class Params(object):
         self.itis = list(np.ones(len(self.itis), dtype=int) + 2)                       
         self.update_coherence = False #continue calibration of RTs
 
+    def randomize_shape_assignments(self):
+        self.hash_sub_id = sum(map(ord, self.sub))
+        
+        rs = RandomState(self.hash_sub_id) #set random state
+        cue_shapes = [3,4,5]
+        rs.shuffle(cue_shapes)
+        self.cues = dict(shape = cue_shapes[0],
+                          color = cue_shapes[1],
+                          motion = cue_shapes[2])
+        self.cue_map = {3:'Triangle', 4:'Diamond', 5: 'Pentagon'}
+    
+    def randomize_test_blocks(self):
+        rs = RandomState(self.hash_sub_id) #set random state
+        test_type = ['motion','color','shape']
+        rs.shuffle(test_type)
+        self.blocks = ['test']
+        for tt in test_type:
+            self.blocks.append(tt)
+            self.blocks.append('test')        
+    
     def lch_to_rgb(self, p):
         """Convert the color values from Lch to RGB."""
         rgbs = []
@@ -89,14 +110,8 @@ class Params(object):
         
         f = 'sub_params'
         im = __import__(f)
-        coherences = getattr(im, 'coherences')
-        self.color_coherence = coherences[self.sub][0]
-        self.motion_coherence = coherences[self.sub][1]
-        
-        luminances = getattr(im, 'luminances')
-        self.lightnesses[0] = luminances[self.sub]
-        
-        print(self.sub, self.color_coherence, self.motion_coherence, self.lightnesses)
+        coh = getattr(im, 'coherences')
+        self.coherence_floor = coh[self.sub]
     
     def run_info(self):
 

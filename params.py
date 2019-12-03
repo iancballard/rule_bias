@@ -66,7 +66,6 @@ train.update(
     coherence = {'motion': .6,
                 'color':.8,
                 'shape':.8},
-    coherence_step = [0]*3,
     num_correct_down = np.repeat([3,3,3,3,3,3,2],3), #how many correct in a row before it gets harder
     feedback_dur = .75,
     decision_dur = 2,
@@ -124,6 +123,17 @@ train.update(
     instruct_color = '#7E2BE0'
 )
 
+retrain = deepcopy(train)
+
+retrain.update(
+    run_type = 'retrain',
+    training_blocks = ['shape','motion','color'],
+    coherence_update = {'motion': .01,
+                'color':.01,
+                'shape':.01},
+    num_correct_down = np.repeat([1],3),
+)
+
 psychophys = deepcopy(base)
 
 psychophys.update(
@@ -177,9 +187,9 @@ switch.update(
     miniblock_ids = ['color_shape','shape_motion','motion_color'],
     num_block_reps = 2, #6 blocks total
     ntrials_per_miniblock = 12, #=72 trials per block
-    coherence_range = dict(color = .1,
-                           motion = .1,
-                           shape = .1),
+    coherence_range = dict(color = .12,
+                           motion = .12,
+                           shape = .12),
     instruct_text = {
     'intro':
                     [
@@ -218,9 +228,6 @@ switch_train.update(
     coherence_floor = dict(color = .8,
                            motion = .8,
                            shape = .8),
-    coherence_range = dict(color = .15,
-                           motion = .15,
-                           shape = .15),
 )
 
 test = deepcopy(switch)
@@ -229,7 +236,7 @@ test.update(
 
     miniblock_ids = ['color_shape','shape_motion','motion_color'],
     num_block_reps = 2, #6 blocks total
-    ntrials_per_miniblock = 12, #=72 trials per block    
+    ntrials_per_miniblock = 12, #=72 trials per block
     n_train_trials = 120, #per subblock
     num_test_within_blocks = 2,
     )
