@@ -17,6 +17,7 @@ base = dict(
                            motion = .8,
                            shape = .8),
     update_coherence = False, #adjust coherences according to rts
+    rew_color = '#997020',
     monitor_units = 'deg',
     fixation_color = -.2,
     text_height = .5,
@@ -236,7 +237,6 @@ reward.update(
     run_type = 'reward',
     num_rew_blocks = 10,
     num_test_blocks = 2,
-    rew_color = '#997020',
     fb_iti = .3,
     fb_dur = .5,
     p_rew = 1.0,
